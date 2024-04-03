@@ -1,0 +1,25 @@
+[package]
+name = "gruff"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies.clap]
+version = "4.5.4"
+default-features = false
+features = ["std", "derive", "help", "color", "usage", "error-context"]
+
+[dependencies.serenity]
+version = "0.12.1"
+default-features = false
+features = ["client", "gateway", "model", "rustls_backend", "standard_framework"]
+
+[dependencies.tokio]
+version = "1.37.0"
+default-features = false
+features = ["rt-multi-thread"]
+
+
+[profile.release]
+lto = true
+codegen-units = 1
