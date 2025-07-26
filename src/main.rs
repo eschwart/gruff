@@ -1,11 +1,13 @@
 use {
     clap::Parser,
+    serde::Deserialize,
     serenity::{
-        all::{Context, EventHandler, Member, RoleId},
+        all::{Context, EventHandler, GuildId, Member, RoleId},
         async_trait,
         prelude::GatewayIntents,
-        Client,
+        Client, Error,
     },
+    std::{collections::HashMap, path::PathBuf},
 };
 
 #[derive(Parser, Debug)]
@@ -14,30 +16,36 @@ struct Config {
     #[arg(short, long)]
     token: String,
 
-    #[arg(required = true, num_args = 1.., last = true)]
-    roles: Vec<RoleId>,
+    #[arg(short, long, default_value = "config.json")]
+    config: PathBuf,
 }
 
-struct Handler(Vec<RoleId>);
+#[derive(Debug, Deserialize)]
+struct Handler(HashMap<GuildId, Vec<RoleId>>);
 
 #[async_trait]
 impl EventHandler for Handler {
     async fn guild_member_addition(&self, ctx: Context, new_member: Member) {
-        if let Err(e) = new_member.add_roles(ctx.http, self.0.as_slice()).await {
-            eprintln!("{:?}", e)
+        if let Some(roles) = self.0.get(&new_member.guild_id) {
+            if let Err(e) = new_member.add_roles(ctx.http, roles.as_slice()).await {
+                eprintln!("{e:?}")
+            }
         }
     }
 }
 
 #[tokio::main]
-async fn main() -> Result<(), serenity::Error> {
+async fn main() -> Result<(), Box<Error>> {
     let cfg = Config::parse();
+
+    let json_str = std::fs::read_to_string(cfg.config).map_err(Error::Io)?;
+    let handler = serde_json::from_str::<Handler>(&json_str).map_err(Error::Json)?;
 
     let intents = GatewayIntents::GUILD_MEMBERS;
 
     let mut client = Client::builder(&cfg.token, intents)
-        .event_handler(Handler(cfg.roles))
+        .event_handler(handler)
         .await?;
 
-    client.start_autosharded().await
+    Ok(client.start_autosharded().await?)
 }

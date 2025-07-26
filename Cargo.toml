@@ -3,11 +3,21 @@ name = "gruff"
 version = "0.1.0"
 edition = "2021"
 
-
 [dependencies.clap]
 version = "4.5.4"
 default-features = false
 features = ["std", "derive", "help", "color", "usage", "error-context"]
+
+[dependencies.serde]
+version = "1.0.219"
+features = ["derive"]
+
+[profile.release]
+lto = true
+codegen-units = 1
+
+[dependencies.serde_json]
+version = "1.0.141"
 
 [dependencies.serenity]
 version = "0.12.1"
@@ -18,8 +28,3 @@ features = ["client", "gateway", "model", "rustls_backend", "standard_framework"
 version = "1.37.0"
 default-features = false
 features = ["rt-multi-thread"]
-
-
-[profile.release]
-lto = true
-codegen-units = 1
